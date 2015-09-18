@@ -1,6 +1,7 @@
 #include "icg_common.h"
 #include <Eigen/Geometry>
 
+#include "C:\icg\raytrace\Sphere.h"
 #ifndef WITH_OPENCV
 #error OpenCV required for this exercise
 #endif
@@ -12,7 +13,7 @@ Colour black() { return Colour(0, 0, 0); }
 
 struct MyImage{
 	/// Data (not private for convenience)
-	int cols = 640;
+	int cols = 620;
 	int rows = 480;
 	///  Channel with [0..255] range image (aka uchar)
 	cv::Mat image = cv::Mat(rows, cols, CV_8UC3, cv::Scalar(255, 255, 255));
@@ -38,7 +39,6 @@ struct MyImage{
 	}
 };
 
-
 int main(int, char**){
 	/// Rays and vectors represented with Eigen
 	typedef Eigen::Vector3f vec3;
@@ -47,11 +47,11 @@ int main(int, char**){
 	MyImage image;
 
 	/// TODO: define camera position and sphere position here
-	vec3 center(320, 240, -30); //the sphere center
-	float radius = 50.0;
-	vec3 eye(320, 240, 50);  //if we assume image pane has origin at 0,0,0, then eye is 10 units in front of it, and 'd' = 10
+	vec3 center(0, 0, -1); //the sphere center
+	float radius = 0.40;
+	vec3 eye(0, 0, 1);  //if we assume image pane has origin at 0,0,0, then eye is 10 units in front of it, and 'd' = 10
 	float dist = eye.z();
-	vec3 light(80, 100,70);
+	vec3 light(-0.5, -0.25,0);
 	//finding pixel coords
 	float left, right, top, bottom;
 	left = bottom = -1;
@@ -60,27 +60,37 @@ int main(int, char**){
 	for (int row = 0; row < image.rows; ++row) {
 		for (int col = 0; col < image.cols; ++col) {
 			//////get normalized device coords
-			float u = (row + 0.5) / image.cols *(image.cols/image.rows); //these do nothing yet, because the viewing frustum is not yet properly setup.
-			float v = bottom + (top - bottom)*(col + 0.5) / image.rows;
+			float u = (left + (right - left)*(col + 0.5) / image.cols);
+			float v = bottom + (top - bottom)*(row + 0.5) / image.rows;
 			//construct ray
 			vec3 s(col, row, 0);  //point on viewframe //was col, row, 0
-			vec3 d(s - eye); d.normalize();  //ray direction normalized
+			vec3 d(u -eye.x(), v-eye.x(), -dist); d.normalize();
+			/*if (row == 240 && col == 320)
+			{
+				cout << d;
+			}*/
 			float b = (d.dot(eye - center));
 			float c = (eye - center).dot(eye - center) - pow(radius, 2);
 			float discriminant = sqrt(pow(b, 2) - c);
 			if (discriminant >= 0) //don't waste computation time if no intersection
 			{
 				float t = fmin(((-1)*b - discriminant), ((-1)*b + discriminant));
+
 				//get n based on c and p(t)
 				vec3 p(eye.x() + t*d.x(), eye.y() + t*d.y(), eye.z() + t*d.z()); //coords of point on sphere
+				//pixel coords;
+				float x = (2 * (p.x()) - 1)*(image.cols / image.rows)* tan(1 / 2 * M_PI / 180);
+				float y = (1 - 2 * (p.y()))* tan(1 / 2 * M_PI / 180);
 				vec3 n((center.x() - p.x()) / radius, (center.y() - p.y()) / radius, (center.z() -p.z() ) / radius);
 				//get unit vector towards light source
 				vec3 l = p - light; l.normalize();
 				//get unit vector towards eye
-				//		vec3 v = p - eye; v.normalize();
+				vec3 view = p - eye; view.normalize();
+				vec3 h = view + l; h.normalize();
 				float factor = n.dot(l); //todo: this is lambertian shading. Use Phong.
 				float I = 35; //Intensity
-				vec3 pix();
+
+		
 				image(row, col) = Colour(fmax(0, factor) * 200 + I, fmax(0, factor) * 200 + I, fmax(0, factor) * 100 + I);
 				//		image(u, v) = Colour(200, 200, 100);
 			}
