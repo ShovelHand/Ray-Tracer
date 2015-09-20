@@ -88,15 +88,14 @@ int main(int, char**){
 	Spheres.push_back(&sphere4);
 
 	//build collection of light sources
-	//std::vector<LightSource*> LightSources;
 	LightSource light1(vec3(-0.5f, -0.25f, 0.0f), Colour(150, 150, 150) ,35.0f);
-	LightSources.push_back(&light1);
+//	LightSources.push_back(&light1);
 	LightSource light2(vec3(0.75f, -0.7f, 0.75f), Colour(150, 150, 150), 20.0f);
-//	LightSources.push_back(&light2);
+	LightSources.push_back(&light2);
 	LightSource light3(vec3(0.75f, 0.7f, -0.75f), Colour(255, 15, 15), 100.0f);
 //	LightSources.push_back(&light3);
 
-	vec3 eye(0, 0, 3);  //if we assume image pane has origin at 0,0,0, then eye is 10 units in front of it, and 'd' = 10
+	vec3 eye(0,0, 3);  //if we assume image pane has origin at 0,0,0, then eye is 10 units in front of it, and 'd' = 10
 	float dist = eye.z();
 	vec3 light(-0.5, -0.25,0);
 	//finding pixel coords
@@ -109,11 +108,11 @@ int main(int, char**){
 			//construct ray
 			float u = (left + (right - left)*(col + 0.5) / image.cols);
 			float v = bottom + (top - bottom)*(row + 0.5) / image.rows;
-		//	vec3 s(col, row, 0);  //point on viewframe //was col, row, 0
 			vec3 d(u -eye.x(), v-eye.x(), -dist); d.normalize();
 
 			//check each sphere for intersection with ray, and if it is the closest intersection
 			float tmin = INFINITY;
+			float t;
 			std::vector<Sphere*>::iterator closestSphere;
 			bool intersection = false;
 			for (std::vector<Sphere*>::iterator itr = Spheres.begin(); itr != Spheres.end(); ++itr)
@@ -123,7 +122,7 @@ int main(int, char**){
 				float discriminant = sqrt(pow(b, 2) - c);
 				if (discriminant >= 0) //don't waste computation time if no intersection
 				{
-					float t = fmin(((-1)*b - discriminant), ((-1)*b + discriminant));
+					t = fmin(((-1)*b - discriminant), ((-1)*b + discriminant));
 					intersection = true;
 					if (t < tmin)
 					{
@@ -134,15 +133,29 @@ int main(int, char**){
 				}
 			}
 			//check for ground plane intersection
-			vec3 p0(0, -20, 0); //vec3 p1(-1, -2, 2); //two points on our ground plane. x-z plane, two units down.
+			vec3 p0(0, 0.1, 0); //vec3 p1(-1, -2, 2); //two points on our ground plane. x-z plane, two units down.
 			vec3 n(0, 1, 0); //normal vector to plane on the x-z plane
 			if (d.dot(n) != 0)
 			{
 				float t = ((p0 - eye).dot(n)) / d.dot(n);
-				if ((eye + t*d - p0).dot(n) == 0 && !intersection && t < 1)
+				if ((eye + t*d - p0).dot(n) == 0 && !intersection && t < 1)// the t < 1 may become un-necessary once shading is handled better, or if INFINITY is set to a better level
 				{
 					intersection = true;
-					image(row, col) = Colour(255, 255, 255);
+					Colour colour(100, 100, 100);
+					vec3 p(eye.x() + t*d.x(), eye.y() + t*d.y(), eye.z() + t*d.z());
+					for (std::vector<LightSource*>::iterator itr = LightSources.begin(); itr != LightSources.end(); ++itr)
+					{
+						//get unit vector towards light source
+						vec3 l = p - (*itr)->GetPos(); l.normalize();
+						//get unit vector towards eye
+						vec3 view = p - eye; view.normalize();
+						vec3 h = view + l; h.normalize();
+						float I = (*itr)->GetI(); //Intensity
+						colour = colour*I*fmax(0.2f, n.dot(l));
+						colour += (*itr)->GetColour()*(I*pow(fmax(0.0f, n.dot(h)), 50)); //using GetColour() means that the specular highligh colour 
+						//is the colour of the light source hitting it, which is probably a sloppy way of doing this.
+					}
+					image(row, col) = colour;
 				}
 			}
 			
