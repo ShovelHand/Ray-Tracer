@@ -90,9 +90,9 @@ int main(int, char**){
 	//build collection of light sources
 	LightSource light1(vec3(-0.5f, -0.25f, 1.0f), Colour(150, 150, 150) ,10);
 	LightSources.push_back(&light1);
-	LightSource light2(vec3(0.75f, -0.7f, 0.75f), Colour(150, 150, 150), 50);
+	LightSource light2(vec3(-0.25f, -1.0f, -3.0f), Colour(150, 150, 150), 50);
 	LightSources.push_back(&light2);
-	LightSource light3(vec3(0.75f, 0.7f, -0.75f), Colour(255, 15, 15), 100.0f);
+	LightSource light3(vec3(0.75f, 0.7f, -0.75f), Colour(255, 15, 15), 30.0f);
 	LightSources.push_back(&light3);
 
 	vec3 eye(0, -0.75, 1.5);  //if we assume image pane has origin at 0,0,0, then eye is 10 units in front of it, and 'd' = 10
@@ -126,7 +126,7 @@ int main(int, char**){
 				if ((eye + t*d - p0).dot(n) == 0 && !intersection )// the t < 1 may become un-necessary once shading is handled better, or if INFINITY is set to a better level
 				{
 					intersection = true;
-					Colour colour(100, 0, 100);  //only one ground, so its colour is declared here
+					Colour colour(0, 0, 0);  //only one ground, so its colour is declared here
 					vec3 p(eye.x() + t*d.x(), eye.y() + t*d.y(), eye.z() + t*d.z()); //point of intersection
 
 					for (std::vector<LightSource*>::iterator itr = LightSources.begin(); itr != LightSources.end(); ++itr)
@@ -137,8 +137,8 @@ int main(int, char**){
 						vec3 view = p - eye; view.normalize();
 						vec3 h = view + l; h.normalize();
 						float I = (*itr)->GetI(); //Intensity
-						colour = colour*I*fmax(0.0f, n.dot(l));
-						colour += (*itr)->GetColour()*(I*pow(fmax(0.0f, n.dot(h)), 10)); //using GetColour() means that the specular highligh colour 
+						colour += Colour(50,30,50)*I*fmax(0.0f, n.dot(l));
+						colour += Colour(50, 0, 50)*(I*pow(fmax(0.0f, n.dot(h)), 0)); //using GetColour() means that the specular highligh colour 
 						//is the colour of the light source hitting it, which is probably a sloppy way of doing this.
 					}
 
