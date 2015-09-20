@@ -88,14 +88,14 @@ int main(int, char**){
 	Spheres.push_back(&sphere4);
 
 	//build collection of light sources
-	LightSource light1(vec3(-0.5f, -0.25f, 0.0f), Colour(150, 150, 150) ,35.0f);
-//	LightSources.push_back(&light1);
+	LightSource light1(vec3(-0.5f, -0.25f, 0.0f), Colour(150, 150, 150) ,350.0f);
+	LightSources.push_back(&light1);
 	LightSource light2(vec3(0.75f, -0.7f, 0.75f), Colour(150, 150, 150), 20.0f);
-	LightSources.push_back(&light2);
+//	LightSources.push_back(&light2);
 	LightSource light3(vec3(0.75f, 0.7f, -0.75f), Colour(255, 15, 15), 100.0f);
 //	LightSources.push_back(&light3);
 
-	vec3 eye(0,0, 3);  //if we assume image pane has origin at 0,0,0, then eye is 10 units in front of it, and 'd' = 10
+	vec3 eye(0,0, 1.5);  //if we assume image pane has origin at 0,0,0, then eye is 10 units in front of it, and 'd' = 10
 	float dist = eye.z();
 	vec3 light(-0.5, -0.25,0);
 	//finding pixel coords
@@ -141,7 +141,7 @@ int main(int, char**){
 				if ((eye + t*d - p0).dot(n) == 0 && !intersection && t < 1)// the t < 1 may become un-necessary once shading is handled better, or if INFINITY is set to a better level
 				{
 					intersection = true;
-					Colour colour(100, 100, 100);
+					Colour colour(100, 200, 155);
 					vec3 p(eye.x() + t*d.x(), eye.y() + t*d.y(), eye.z() + t*d.z());
 					for (std::vector<LightSource*>::iterator itr = LightSources.begin(); itr != LightSources.end(); ++itr)
 					{
@@ -161,7 +161,7 @@ int main(int, char**){
 			
 			if (!intersection)
 			{
-				image(row, col) = Colour(155, 155, 155);
+				image(row, col) = Colour(0, 0, 0);
 			}
 		}
 	}
