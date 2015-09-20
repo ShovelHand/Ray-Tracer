@@ -56,17 +56,15 @@ Colour Shade(vec3 origin, Sphere* sphere, vec3 p)
 	
 	for (std::vector<LightSource*>::iterator itr = LightSources.begin(); itr != LightSources.end(); ++itr)
 	{
-	//	cout << "got here ";
 		//get unit vector towards light source
 		vec3 l = p - (*itr)->GetPos(); l.normalize();
 		//get unit vector towards eye
 		vec3 view = p - origin; view.normalize();
 		vec3 h = view + l; h.normalize();
 		float I = (*itr)->GetI(); //Intensity
-	//	colour.mul(I*fmax(0, n.dot(l)));// +colour.mul(I*pow(fmax(0, n.dot(h)), sphere->GetGloss()));
-		colour = colour*I*fmax(0, n.dot(l));
-		colour += colour*(I*pow(fmax(0, n.dot(h)), sphere->GetGloss()));
-
+		colour =  colour*I*fmax(0.2f, n.dot(l));
+		colour += (*itr)->GetColour()*(I*pow(fmax(0.0f, n.dot(h)), sphere->GetGloss())); //using GetColour() means that the specular highligh colour 
+		//is the colour of the light source hitting it, which is probably a sloppy way of doing this.
 	}
 
 	return colour;
@@ -79,27 +77,26 @@ int main(int, char**){
 
 	MyImage image;
 
-	vec3 center(0, 0, -1); //the sphere center
-	float radius = 0.40;
-	
-	//build collection of spheres					g	b	r
+	//build collection of spheres					b	g	r
 	Sphere sphere1(vec3(0, 0, -1.5), 0.40f, Colour(255, 0, 0), 50);
 	Spheres.push_back(&sphere1);
 	Sphere sphere2(vec3(-0.5, 0.5, -0.5), 0.5f, Colour(0, 0, 255), 1000);
 	Spheres.push_back(&sphere2);
 	Sphere sphere3(vec3(0.75, -0.5, -1), 0.7f, Colour(0, 255, 0), 100000);
 	Spheres.push_back(&sphere3);
+	Sphere sphere4(vec3(-0.4, -0.75, 0), 0.2f, Colour(150, 0, 150), 10000);
+	Spheres.push_back(&sphere4);
 
 	//build collection of light sources
 	//std::vector<LightSource*> LightSources;
 	LightSource light1(vec3(-0.5f, -0.25f, 0.0f), Colour(150, 150, 150) ,35.0f);
 	LightSources.push_back(&light1);
 	LightSource light2(vec3(0.75f, -0.7f, 0.75f), Colour(150, 150, 150), 20.0f);
-	LightSources.push_back(&light2);
+//	LightSources.push_back(&light2);
 	LightSource light3(vec3(0.75f, 0.7f, -0.75f), Colour(255, 15, 15), 100.0f);
 //	LightSources.push_back(&light3);
 
-	vec3 eye(0, 0, 1);  //if we assume image pane has origin at 0,0,0, then eye is 10 units in front of it, and 'd' = 10
+	vec3 eye(0, 0, 3);  //if we assume image pane has origin at 0,0,0, then eye is 10 units in front of it, and 'd' = 10
 	float dist = eye.z();
 	vec3 light(-0.5, -0.25,0);
 	//finding pixel coords
@@ -107,7 +104,6 @@ int main(int, char**){
 	left = bottom = -1;
 	top = right = 1;
 
-	
 	for (int row = 0; row < image.rows; ++row) {
 		for (int col = 0; col < image.cols; ++col) {
 			//construct ray
@@ -137,8 +133,23 @@ int main(int, char**){
 					}
 				}
 			}
+			//check for ground plane intersection
+			vec3 p0(0, -20, 0); //vec3 p1(-1, -2, 2); //two points on our ground plane. x-z plane, two units down.
+			vec3 n(0, 1, 0); //normal vector to plane on the x-z plane
+			if (d.dot(n) != 0)
+			{
+				float t = ((p0 - eye).dot(n)) / d.dot(n);
+				if ((eye + t*d - p0).dot(n) == 0 && !intersection && t < 1)
+				{
+					intersection = true;
+					image(row, col) = Colour(255, 255, 255);
+				}
+			}
+			
 			if (!intersection)
+			{
 				image(row, col) = Colour(155, 155, 155);
+			}
 		}
 	}
 
