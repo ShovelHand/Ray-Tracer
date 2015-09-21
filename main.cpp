@@ -115,9 +115,11 @@ int main(int, char**){
 			float t;
 			bool intersection = false;
 			//check for ground plane intersection
-			vec3 p0(0, 1, 0); //vec3 p1(-1, -2, 2); //two points on our ground plane. x-z plane, two units down.
+			vec3 p0(0, 1, 0); //vec3 p1(-1, 1, 2); vec3 p2(0, 1, 1); // I really need just one point and the norm, but ruling out some bugs.
+		//	vec3 P0 = p1 - p0; vec3 P1 = p2 - p0;
+			//vec3 n = P0.cross(P1);
+			//n.normalize();
 			vec3 n(0, 1, 0); //normal vector to plane on the x-z plane
-			n.normalize();   //not really necessary unless I want to see the plane at a weird tilt
 			if (d.dot(n) != 0)
 			{
 				t = ((p0 - eye).dot(n)) / d.dot(n);
@@ -137,8 +139,8 @@ int main(int, char**){
 						vec3 view = p - eye; view.normalize();
 						vec3 h = view + l; h.normalize();
 						float I = (*itr)->GetI(); //Intensity
-						colour += Colour(50,30,50)*I*fmax(0.0f, n.dot(l));
-						colour += Colour(50, 0, 50)*(I*pow(fmax(0.0f, n.dot(h)), 0)); //using GetColour() means that the specular highligh colour 
+						colour += Colour(50,0,50)*I*fmax(0.0f, n.dot(l)); // only one ground, so colour can be handled here.
+						colour += Colour(50, 0, 50)*(I*pow(fmax(0.0f, n.dot(h)), 10));
 						//is the colour of the light source hitting it, which is probably a sloppy way of doing this.
 					}
 
