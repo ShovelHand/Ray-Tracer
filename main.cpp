@@ -72,6 +72,19 @@ Colour Shade(vec3 origin, Sphere* sphere, vec3 p)
 		colour += sphere->GetColour()*I*fmax(0.2f, n.dot(l));
 		colour += (*itr)->GetColour()*(I*pow(fmax(0.2f, n.dot(h)), sphere->GetGloss())); //using GetColour() means that the specular highligh colour 
 		//is the colour of the light source hitting it, which is probably a sloppy way of doing this.
+		vec3 shadowRay = castRay(p, l);
+		for (std::vector<Sphere*>::iterator itr = Spheres.begin(); itr != Spheres.end(); ++itr)
+		{
+			float b = (shadowRay.dot(p - (*itr)->GetPos()));
+			float c = (p - (*itr)->GetPos()).dot(p - (*itr)->GetPos()) - pow((*itr)->GetRad(), 2);
+			float discriminant = sqrt(pow(b, 2) - c);
+			float t = fmin(((-1)*b - discriminant), ((-1)*b + discriminant));
+			if (discriminant >= 0 && t > 0.1f) //don't waste computation time if no intersection
+			{	
+				colour = sphere->GetColour()/2;
+			}
+		}
+
 	}
 
 	return colour;
@@ -87,7 +100,7 @@ int main(int, char**){
 	//build collection of spheres					b	g	r
 	Sphere sphere1(vec3(0, 0, 1.5), 0.40f, Colour(255, 0, 0), 50);
 	Spheres.push_back(&sphere1);
-	Sphere sphere2(vec3(-0.5, 0.5, 0.5), 0.5f, Colour(0, 0, 255), 1000);
+	Sphere sphere2(vec3(-0.5, -0.25, 0.5), 0.5f, Colour(0, 0, 255), 1000);
 	Spheres.push_back(&sphere2);
 	Sphere sphere3(vec3(0.75, -0.5, 1), 0.7f, Colour(0, 255, 0), 100000);
 	Spheres.push_back(&sphere3);
@@ -107,10 +120,10 @@ int main(int, char**){
 	vec3 light(-0.5, -0.25,0);
 	//finding pixel coords
 	float left, right, top, bottom;
-	left = -(image.cols/image.rows);
+	left = -(float(image.cols)/float(image.rows));
 	bottom = -1;
 	top = 1;
-	right = (image.cols / image.rows);
+	right = (float(image.cols) / float(image.rows));
 
 	for (int row = 0; row < image.rows; ++row) {
 		for (int col = 0; col < image.cols; ++col) {
