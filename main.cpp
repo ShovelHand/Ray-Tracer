@@ -46,6 +46,13 @@ struct MyImage{
 std::vector<Sphere*> Spheres;
 std::vector<LightSource*> LightSources;
 
+vec3 castRay(vec3 o, vec3 d)
+{
+	vec3 ray(d.x() - o.x(), d.y() - o.y(), -o.z()); d.normalize();
+	ray.normalize();
+	return ray;
+}
+
 Colour Shade(vec3 origin, Sphere* sphere, vec3 p)
 {
 	Colour colour(0, 0, 0);
@@ -62,8 +69,8 @@ Colour Shade(vec3 origin, Sphere* sphere, vec3 p)
 		vec3 view = p - origin; view.normalize();
 		vec3 h = (view + l); h.normalize();
 		float I = (*itr)->GetI(); //Intensity
-		colour +=  sphere->GetColour()*I*fmax(0.0f, n.dot(l));
-		colour += (*itr)->GetColour()*(I*pow(fmax(0.0f, n.dot(h)), sphere->GetGloss())); //using GetColour() means that the specular highligh colour 
+		colour += sphere->GetColour()*I*fmax(0.2f, n.dot(l));
+		colour += (*itr)->GetColour()*(I*pow(fmax(0.2f, n.dot(h)), sphere->GetGloss())); //using GetColour() means that the specular highligh colour 
 		//is the colour of the light source hitting it, which is probably a sloppy way of doing this.
 	}
 
@@ -88,7 +95,7 @@ int main(int, char**){
 	Spheres.push_back(&sphere4);
 
 	//build collection of light sources
-	LightSource light1(vec3(-0.5f, 0.0f, 1.0f), Colour(150, 150, 150) ,10);
+	LightSource light1(vec3(-0.5f, -1.7f, 1.75f), Colour(150, 150, 150) ,10);
 	LightSources.push_back(&light1);
 	LightSource light2(vec3(-0.99f, -1.0f, -3.0f), Colour(150, 150, 150), 50);
 	LightSources.push_back(&light2);
@@ -110,25 +117,26 @@ int main(int, char**){
 			//construct ray
 			float u = (left + (right - left)*(col + 0.5) / image.cols);
 			float v = (bottom + (top - bottom)*(row + 0.5) / image.rows);
-			vec3 d(u -eye.x(), v-eye.y(), -dist); d.normalize();
-		
-			//check each sphere for intersection with ray, and if it is the closest intersection
+			//vec3 d(u -eye.x(), v-eye.y(), -dist); d.normalize();
+			vec3 d(u, v, 0);
+			vec3 r = castRay(eye, d);
+
 			float tmin = INFINITY;
 			float t;
 			bool intersection = false;
 			//check for ground plane intersection
 			vec3 p0(0, 1, 0); 
 			vec3 n(0, 1, 0); //normal vector to plane on the x-z plane
-			if (d.dot(n) != 0 && row >= 240) //the inequality is here until I can figure out why the plane appears in the sky.
+			if (r.dot(n) != 0 && row >= (image.rows/2)) //the inequality is here until I can figure out why the plane appears in the sky.
 			{
-				t = ((p0 - eye).dot(n)) / d.dot(n);
+				t = ((p0 - eye).dot(n)) / r.dot(n);
 
 				tmin = t;
-				if ((eye + t*d - p0).dot(n) == 0 && !intersection)// the t < 1 may become un-necessary once shading is handled better, or if INFINITY is set to a better level
+				if ((eye + t*r - p0).dot(n) == 0 && !intersection)// the t < 1 may become un-necessary once shading is handled better, or if INFINITY is set to a better level
 				{
 					intersection = true;
 					Colour colour(0, 0, 0);  //only one ground, so its colour is declared here
-					vec3 p(eye.x() + t*d.x(), eye.y() + t*d.y(), eye.z() + t*d.z()); //point of intersection
+					vec3 p(eye.x() + t*r.x(), eye.y() + t*r.y(), eye.z() + t*r.z()); //point of intersection
 
 					for (std::vector<LightSource*>::iterator itr = LightSources.begin(); itr != LightSources.end(); ++itr)
 					{
@@ -140,6 +148,7 @@ int main(int, char**){
 						float I = (*itr)->GetI(); //Intensity
 						colour += Colour(50, 0, 50)*I*fmax(0.0f, n.dot(l)); // only one ground, so colour can be handled here.
 						colour += Colour(50, 0, 50)*(I*pow(fmax(0.0f, n.dot(h)), 10));
+
 						//is the colour of the light source hitting it, which is probably a sloppy way of doing this.
 					}
 
@@ -150,7 +159,7 @@ int main(int, char**){
 
 			for (std::vector<Sphere*>::iterator itr = Spheres.begin(); itr != Spheres.end(); ++itr)
 			{
-				float b = (d.dot(eye - (*itr)->GetPos()));
+				float b = (r.dot(eye - (*itr)->GetPos()));
 				float c = (eye - (*itr)->GetPos()).dot(eye - (*itr)->GetPos()) - pow((*itr)->GetRad(), 2);
 				float discriminant = sqrt(pow(b, 2) - c);
 				if (discriminant >= 0) //don't waste computation time if no intersection
@@ -159,7 +168,7 @@ int main(int, char**){
 					intersection = true;
 					if (t < tmin)
 					{
-						vec3 p(eye.x() + t*d.x(), eye.y() + t*d.y(), eye.z() + t*d.z());
+						vec3 p(eye.x() + t*r.x(), eye.y() + t*r.y(), eye.z() + t*r.z());
 						tmin = t;
 						image(row, col) = Shade(eye, (*itr), p);
 					}
@@ -178,3 +187,4 @@ int main(int, char**){
 
 	return EXIT_SUCCESS;
 }
+
