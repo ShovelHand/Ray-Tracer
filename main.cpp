@@ -60,7 +60,7 @@ Colour Shade(vec3 origin, Sphere* sphere, vec3 p)
 		vec3 l = p - (*itr)->GetPos(); l.normalize();
 		//get unit vector towards eye
 		vec3 view = p - origin; view.normalize();
-		vec3 h = view + l; h.normalize();
+		vec3 h = (view + l); h.normalize();
 		float I = (*itr)->GetI(); //Intensity
 		colour +=  sphere->GetColour()*I*fmax(0.0f, n.dot(l));
 		colour += (*itr)->GetColour()*(I*pow(fmax(0.0f, n.dot(h)), sphere->GetGloss())); //using GetColour() means that the specular highligh colour 
@@ -78,36 +78,38 @@ int main(int, char**){
 	MyImage image;
 
 	//build collection of spheres					b	g	r
-	Sphere sphere1(vec3(0, 0, -1.5), 0.40f, Colour(255, 0, 0), 50);
+	Sphere sphere1(vec3(0, 0, 1.5), 0.40f, Colour(255, 0, 0), 50);
 	Spheres.push_back(&sphere1);
-	Sphere sphere2(vec3(-0.5, 0.5, -0.5), 0.5f, Colour(0, 0, 255), 1000);
+	Sphere sphere2(vec3(-0.5, 0.5, 0.5), 0.5f, Colour(0, 0, 255), 1000);
 	Spheres.push_back(&sphere2);
-	Sphere sphere3(vec3(0.75, -0.5, -1), 0.7f, Colour(0, 255, 0), 100000);
+	Sphere sphere3(vec3(0.75, -0.5, 1), 0.7f, Colour(0, 255, 0), 100000);
 	Spheres.push_back(&sphere3);
 	Sphere sphere4(vec3(-0.4, -0.75, 0), 0.2f, Colour(150, 0, 150), 10000);
 	Spheres.push_back(&sphere4);
 
 	//build collection of light sources
-	LightSource light1(vec3(-0.5f, -0.25f, 1.0f), Colour(150, 150, 150) ,10);
+	LightSource light1(vec3(-0.5f, 0.0f, 1.0f), Colour(150, 150, 150) ,10);
 	LightSources.push_back(&light1);
-	LightSource light2(vec3(-0.25f, -1.0f, -3.0f), Colour(150, 150, 150), 50);
+	LightSource light2(vec3(-0.99f, -1.0f, -3.0f), Colour(150, 150, 150), 50);
 	LightSources.push_back(&light2);
-	LightSource light3(vec3(0.75f, 0.7f, -0.75f), Colour(255, 15, 15), 30.0f);
+	LightSource light3(vec3(0.99f, 0.7f, 5.0f), Colour(255, 15, 15), 30.0f);
 	LightSources.push_back(&light3);
 
-	vec3 eye(0, -0.75, 1.5);  //if we assume image pane has origin at 0,0,0, then eye is 10 units in front of it, and 'd' = 10
+	vec3 eye(0, 0, -1.5);  //if we assume image pane has origin at 0,0,0, then eye is 10 units in front of it, and 'd' = 10
 	float dist = eye.z();
 	vec3 light(-0.5, -0.25,0);
 	//finding pixel coords
 	float left, right, top, bottom;
-	left = bottom = -1;
-	top = right = 1;
+	left = -(image.cols/image.rows);
+	bottom = -1;
+	top = 1;
+	right = (image.cols / image.rows);
 
 	for (int row = 0; row < image.rows; ++row) {
 		for (int col = 0; col < image.cols; ++col) {
 			//construct ray
 			float u = (left + (right - left)*(col + 0.5) / image.cols);
-			float v = bottom + (top - bottom)*(row + 0.5) / image.rows;
+			float v = (bottom + (top - bottom)*(row + 0.5) / image.rows);
 			vec3 d(u -eye.x(), v-eye.y(), -dist); d.normalize();
 		
 			//check each sphere for intersection with ray, and if it is the closest intersection
@@ -115,17 +117,14 @@ int main(int, char**){
 			float t;
 			bool intersection = false;
 			//check for ground plane intersection
-			vec3 p0(0, 1, 0); //vec3 p1(-1, 1, 2); vec3 p2(0, 1, 1); // I really need just one point and the norm, but ruling out some bugs.
-		//	vec3 P0 = p1 - p0; vec3 P1 = p2 - p0;
-			//vec3 n = P0.cross(P1);
-			//n.normalize();
+			vec3 p0(0, 1, 0); 
 			vec3 n(0, 1, 0); //normal vector to plane on the x-z plane
-			if (d.dot(n) != 0)
+			if (d.dot(n) != 0 && row >= 240) //the inequality is here until I can figure out why the plane appears in the sky.
 			{
 				t = ((p0 - eye).dot(n)) / d.dot(n);
-			
+
 				tmin = t;
-				if ((eye + t*d - p0).dot(n) == 0 && !intersection )// the t < 1 may become un-necessary once shading is handled better, or if INFINITY is set to a better level
+				if ((eye + t*d - p0).dot(n) == 0 && !intersection)// the t < 1 may become un-necessary once shading is handled better, or if INFINITY is set to a better level
 				{
 					intersection = true;
 					Colour colour(0, 0, 0);  //only one ground, so its colour is declared here
@@ -139,7 +138,7 @@ int main(int, char**){
 						vec3 view = p - eye; view.normalize();
 						vec3 h = view + l; h.normalize();
 						float I = (*itr)->GetI(); //Intensity
-						colour += Colour(50,0,50)*I*fmax(0.0f, n.dot(l)); // only one ground, so colour can be handled here.
+						colour += Colour(50, 0, 50)*I*fmax(0.0f, n.dot(l)); // only one ground, so colour can be handled here.
 						colour += Colour(50, 0, 50)*(I*pow(fmax(0.0f, n.dot(h)), 10));
 						//is the colour of the light source hitting it, which is probably a sloppy way of doing this.
 					}
@@ -167,7 +166,6 @@ int main(int, char**){
 				}
 			}
 		
-			
 			if (!intersection)
 			{
 				image(row, col) = Colour(0, 0, 0);
