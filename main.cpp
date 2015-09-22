@@ -8,7 +8,7 @@
 #error OpenCV required for this exercise
 #endif
 
-#define INFINITY 10000  //just some arbitrarily large number to help find closest intersection
+//#define INFINITY 10000  //just some arbitrarily large number to help find closest intersection
 typedef cv::Vec3b Colour;
 Colour red() { return Colour(255, 0, 0); }
 Colour white() { return Colour(255, 255, 255); }
@@ -55,7 +55,7 @@ vec3 castRay(vec3 o, vec3 d)
 
 Colour Shade(vec3 origin, Sphere* sphere, vec3 p)
 {
-	Colour colour(0, 0, 0);
+	Colour colour = sphere->GetColour()/25;
 	//get normal n based on the point of interesection
 	vec3 n((sphere->GetPos().x() - p.x()) / sphere->GetRad(),
 		(sphere->GetPos().y() - p.y()) / sphere->GetRad(),
@@ -91,7 +91,7 @@ int main(int, char**){
 	Spheres.push_back(&sphere2);
 	Sphere sphere3(vec3(0.75, -0.5, 1), 0.7f, Colour(0, 255, 0), 100000);
 	Spheres.push_back(&sphere3);
-	Sphere sphere4(vec3(-0.4, -0.75, 0), 0.2f, Colour(150, 0, 150), 10000);
+	Sphere sphere4(vec3(-0.4f, -0.75f, 0.0f), 0.2f, Colour(150, 0, 150), 10000);
 	Spheres.push_back(&sphere4);
 
 	//build collection of light sources
@@ -148,6 +148,18 @@ int main(int, char**){
 						float I = (*itr)->GetI(); //Intensity
 						colour += Colour(50, 0, 50)*I*fmax(0.0f, n.dot(l)); // only one ground, so colour can be handled here.
 						colour += Colour(50, 0, 50)*(I*pow(fmax(0.0f, n.dot(h)), 10));
+						vec3 shadowRay = castRay(p, l);
+						
+						for (std::vector<Sphere*>::iterator itr = Spheres.begin(); itr != Spheres.end(); ++itr)
+						{
+							float b = (shadowRay.dot(eye - (*itr)->GetPos()));
+							float c = (p - (*itr)->GetPos()).dot(p - (*itr)->GetPos()) - pow((*itr)->GetRad(), 2);
+							float discriminant = sqrt(pow(b, 2) - c);
+							if (discriminant >= 0) //don't waste computation time if no intersection
+							{
+								colour = (50, 0, 50);
+							}
+						}
 
 						//is the colour of the light source hitting it, which is probably a sloppy way of doing this.
 					}
