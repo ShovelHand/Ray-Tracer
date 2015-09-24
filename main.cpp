@@ -107,7 +107,7 @@ int main(int, char**){
 	//build collection of spheres					b	g	r
 	Sphere sphere1(vec3(0, 0, 1.5), 0.40f, Colour(255, 0, 0), 50);
 	Spheres.push_back(&sphere1);
-	Sphere sphere2(vec3(-0.5, 0.5, 0.5), 0.4f, Colour(0, 0, 255), 1000);
+	Sphere sphere2(vec3(-0.75, 0.5, 0.5), 0.4f, Colour(0, 0, 255), 1000);
 	Spheres.push_back(&sphere2);
 	Sphere sphere3(vec3(0.75, 0.5, 0.5), 0.4f, Colour(0, 255, 0), 100000);
 	Spheres.push_back(&sphere3);
@@ -119,7 +119,7 @@ int main(int, char**){
 	//build collection of light sources
 	LightSource light1(vec3(-0.5f, -1.7f, 1.75f), Colour(150, 150, 150) ,10);
 	LightSources.push_back(&light1);
-	LightSource light2(vec3(0.0f, 0.0f, -0.5f), Colour(150, 150, 150), 50);
+	LightSource light2(vec3(-1.0f, 0.0f, -0.5f), Colour(150, 150, 150), 50);
 	LightSources.push_back(&light2);
 	LightSource light3(vec3(0.99f, 0.7f, 5.0f), Colour(255, 15, 15), 30.0f);
 	LightSources.push_back(&light3);
@@ -172,16 +172,16 @@ int main(int, char**){
 						colour += groundColour*(I*pow(fmax(0.0f, n.dot(h)), 10));
 						vec3 shadowRay = castRay(p, l);
 
-						//for (std::vector<Sphere*>::iterator itr = Spheres.begin(); itr != Spheres.end(); ++itr)
-						//{
-						//	float b = (shadowRay.dot(eye - (*itr)->GetPos()));
-						//	float c = (p - (*itr)->GetPos()).dot(p - (*itr)->GetPos()) - pow((*itr)->GetRad(), 2);
-						//	float discriminant = sqrt(pow(b, 2) - c);
-						//	if (discriminant >= 0) //don't waste computation time if no intersection
-						//	{
-						//			colour -= Colour(1, 1, 1);
-						//	}
-						//}
+						for (std::vector<Sphere*>::iterator itr = Spheres.begin(); itr != Spheres.end(); ++itr)
+						{
+							float b = (shadowRay.dot(eye - (*itr)->GetPos()));
+							float c = (p - (*itr)->GetPos()).dot(p - (*itr)->GetPos()) - pow((*itr)->GetRad(), 2);
+							float discriminant = sqrt(pow(b, 2) - c);
+							if (discriminant >= 0) //don't waste computation time if no intersection
+							{
+									colour -= Colour(10, 10, 10);
+							}
+						}
 
 						//is the colour of the light source hitting it, which is probably a sloppy way of doing this.
 					}
