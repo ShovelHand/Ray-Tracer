@@ -48,7 +48,7 @@ std::vector<LightSource*> LightSources;
 
 vec3 castRay(vec3 o, vec3 d)
 {
-	vec3 ray(d.x() - o.x(), d.y() - o.y(), -o.z()); d.normalize();
+	vec3 ray(d.x() - o.x(), d.y() - o.y(), d.z() -o.z()); d.normalize();
 	ray.normalize();
 	return ray;
 }
